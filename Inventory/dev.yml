@@ -1,15 +1,15 @@
 [nfs]
-18.206.126.23 ansible_ssh_user='ec2-user'
+172.31.83.241 ansible_ssh_user='ec2-user'
 
 [webservers]
-18.212.16.190 ansible_ssh_user='ec2-user'
-54.205.97.164 ansible_ssh_user='ec2-user'
+172.31.82.33 ansible_ssh_user='ec2-user'
+172.31.88.136 ansible_ssh_user='ec2-user'
 
 [db]
-3.83.232.32 ansible_ssh_user='ec2-user' 
+172.31.87.221 ansible_ssh_user='ec2-user' 
 
 [lb]
-44.217.4.221 ansible_ssh_user='ubuntu'
+172.31.88.215 ansible_ssh_user='ubuntu'
 
 [all:vars]
 ansible_python_interpreter=/usr/libexec/platform-python
