@@ -10,3 +10,6 @@
 
 [lb]
 44.217.4.221 ansible_ssh_user='ubuntu'
+
+[all:vars]
+ansible_python_interpreter=/usr/libexec/platform-python
