@@ -65,9 +65,9 @@
 
     - name: Copy Tomcat Service from local to remote
       copy:
-        src: tomcat.service  # Ensure this file is correctly configured and present in your Ansible project directory
+        src: /etc/tomcat.service  # Ensure this file is correctly configured and present in your Ansible project directory
         dest: /etc/systemd/system/tomcat.service
-        mode: 0644
+        mode: 0755
       notify: reload systemd
 
     - name: Start and Enable Tomcat 10 on server
