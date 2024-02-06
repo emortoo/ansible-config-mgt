@@ -92,7 +92,7 @@
       systemd:
         daemon_reload: yes
     
-    - name: Start and Enable Tomcat 10 on server
+    - name: Enable Tomcat 10 on server
       become: yes
       systemd:
         name: tomcat
