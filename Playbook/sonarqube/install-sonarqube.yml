@@ -43,14 +43,23 @@
         owner: sonarqube
         group: sonarqube
 
-    - name: Unzip SonarQube
-      unarchive:
-        src: "/tmp/sonarqube.zip"
-        dest: "{{ sonarqube_home }}"
-        remote_src: yes
-        owner: sonarqube
-        group: sonarqube
-        extra_opts: [--strip-components=1]
+    - name: Unzip SonarQube with strip components
+      command: unzip -o /tmp/sonarqube.zip -d /opt/sonarqube_temp
+      become: true
+      become_user: sonarqube
+
+    - name: Move SonarQube files to correct directory
+      command: mv /opt/sonarqube_temp/* /opt/sonarqube/
+      become: true
+      become_user: sonarqube
+      # Assuming sonarqube_install_needs_strip is defined elsewhere in your playbook or vars
+      when: sonarqube_install_needs_strip | default(true)
+
+    - name: Remove temporary directory
+      file:
+        path: /opt/sonarqube_temp
+        state: absent
+      become: true
 
     - name: Download PostgreSQL JDBC driver
       get_url:
