@@ -4,7 +4,6 @@
   remote_user: ec2-user
   become: true
   vars:
-    tomcat_version: "10.0.4"
     tomcat_download_url: "https://dlcdn.apache.org/tomcat/jakartaee-migration/v1.0.7/binaries/jakartaee-migration-1.0.7-bin.tar.gz"
     tomcat_install_directory: "/opt/tomcat10"
 
@@ -63,20 +62,47 @@
         - "{{ tomcat_install_directory }}/temp"
         - "{{ tomcat_install_directory }}/bin"
 
-    - name: Copy Tomcat Service from local to remote
+    - name: Creating a service file 
+      become: yes
       copy:
-        src: /etc/tomcat.service  # Ensure this file is correctly configured and present in your Ansible project directory
-        dest: /etc/systemd/system/tomcat.service
-        mode: 0755
-      notify: reload systemd
+        dest: /etc/systemd/system/tomcat.service 
+        content: |
+          [Unit]
+          Description=Tomcat Service 
+          Requires=network.target
+          After=network.target
 
+          [Service]
+          Type=forking 
+          User=tomcat
+          Environment="CATALINA_PID=/opt/tomcat10/logs/tomcat.pid"
+          Environment="CATALINA_ BASE=/opt/tomcat10" 
+          Environment="CATALINA_HOME=/opt/tomcat10"
+          Environment="CATALINA_OPTS=-Xms512M -Xmxl024M -server -XX:+UseParallelGC"
+          
+          ExecStart=/opt/tomcat10/bin/startup.sh 
+          ExecStop=/opt/tomcat10/bin/shutdown.sh 
+          Restart=on-abnormal
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start and Enable Tomcat 10 on server
+      become: yes
+      systemd:
+        daemon_reload: yes
+    
     - name: Start and Enable Tomcat 10 on server
       systemd:
         name: tomcat
         enabled: yes
         state: started
 
-  handlers:
-    - name: reload systemd
-      systemd:
-        daemon_reload: yes
+    - name: Connect to Tomcat server on port 8080 and check status 200 - Try 5 times
+      tags: test
+      uri:
+        url: http://localhost:8080
+      register: result
+      until: "result.status == 200"
+      retries: 5
+      delay: 10
