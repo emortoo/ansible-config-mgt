@@ -4,7 +4,8 @@
   remote_user: ec2-user
   become: true
   vars:
-    tomcat_download_url: "https://dlcdn.apache.org/tomcat/jakartaee-migration/v1.0.7/binaries/jakartaee-migration-1.0.7-bin.tar.gz"
+    tomcat_version: "10.0.4"
+    tomcat_download_url: "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.18/bin/apache-tomcat-10.1.18.tar.gz"
     tomcat_install_directory: "/opt/tomcat10"
 
   tasks:
