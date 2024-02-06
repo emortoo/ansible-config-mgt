@@ -1,0 +1,88 @@
+---
+- name: Install SonarQube
+  hosts: sonar
+  become: true
+  vars:
+    sonarqube_version: "8.9.1.44547"
+    sonarqube_home: "/opt/sonarqube"
+    sonarqube_download_url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonarqube_version }}.zip"
+    postgresql_jdbc_driver_url: "https://jdbc.postgresql.org/download/postgresql-42.2.5.jar"
+
+  tasks:
+    - name: Install necessary packages
+      yum:
+        name:
+          - java-11-openjdk
+          - unzip
+          - wget
+          - git
+        state: present
+
+    - name: Create SonarQube group
+      group:
+        name: sonarqube
+        state: present
+
+    - name: Create SonarQube user
+      user:
+        name: sonarqube
+        group: sonarqube
+        system: true
+        home: "{{ sonarqube_home }}"
+        createhome: false
+
+    - name: Download SonarQube
+      get_url:
+        url: "{{ sonarqube_download_url }}"
+        dest: "/tmp/sonarqube.zip"
+
+    - name: Ensure SonarQube home directory exists
+      file:
+        path: "{{ sonarqube_home }}"
+        state: directory
+        owner: sonarqube
+        group: sonarqube
+
+    - name: Unzip SonarQube
+      unarchive:
+        src: "/tmp/sonarqube.zip"
+        dest: "{{ sonarqube_home }}"
+        remote_src: yes
+        owner: sonarqube
+        group: sonarqube
+        extra_opts: [--strip-components=1]
+
+    - name: Download PostgreSQL JDBC driver
+      get_url:
+        url: "{{ postgresql_jdbc_driver_url }}"
+        dest: "{{ sonarqube_home }}/extensions/jdbc-driver/postgresql/"
+        owner: sonarqube
+        group: sonarqube
+
+    - name: Set proper permissions on SonarQube directories
+      file:
+        path: "{{ item }}"
+        owner: sonarqube
+        group: sonarqube
+        recurse: yes
+      with_items:
+        - "{{ sonarqube_home }}/temp"
+        - "{{ sonarqube_home }}/logs"
+        - "{{ sonarqube_home }}/data"
+
+    - name: Configure SonarQube to run as a service (Example systemd unit file)
+      template:
+        src: sonarqube.service.j2
+        dest: /etc/systemd/system/sonarqube.service
+      notify: Reload systemd
+
+    - name: Start and enable SonarQube service
+      systemd:
+        name: sonarqube
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes

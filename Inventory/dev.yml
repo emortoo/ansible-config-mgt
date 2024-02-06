@@ -11,5 +11,8 @@
 [lb]
 172.31.88.215 ansible_ssh_user='ubuntu'
 
+[sonar]
+54.226.53.190 ansible_ssh_user='ec2-user'
+
 [all:vars]
 ansible_python_interpreter=/usr/libexec/platform-python
