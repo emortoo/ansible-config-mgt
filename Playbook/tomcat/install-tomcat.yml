@@ -65,8 +65,7 @@
     - name: Creating a service file 
       become: yes
       copy:
-        dest: /etc/systemd/system/tomcat.service 
-        content: |
+        content: |-
           [Unit]
           Description=Tomcat Service 
           Requires=network.target
@@ -76,7 +75,7 @@
           Type=forking 
           User=tomcat
           Environment="CATALINA_PID=/opt/tomcat10/logs/tomcat.pid"
-          Environment="CATALINA_ BASE=/opt/tomcat10" 
+          Environment="CATALINA_BASE=/opt/tomcat10" 
           Environment="CATALINA_HOME=/opt/tomcat10"
           Environment="CATALINA_OPTS=-Xms512M -Xmxl024M -server -XX:+UseParallelGC"
           
@@ -86,13 +85,15 @@
 
           [Install]
           WantedBy=multi-user.target
+        dest: /etc/systemd/system/tomcat.service
 
-    - name: Start and Enable Tomcat 10 on server
+    - name: Reload the SystemD to re-read configurations
       become: yes
       systemd:
         daemon_reload: yes
     
     - name: Start and Enable Tomcat 10 on server
+      become: yes
       systemd:
         name: tomcat
         enabled: yes
