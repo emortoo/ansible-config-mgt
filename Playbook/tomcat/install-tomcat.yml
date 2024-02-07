@@ -4,14 +4,15 @@
   remote_user: ec2-user
   become: true
   vars:
-    tomcat_version: "10.0.4"
-    tomcat_download_url: "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.18/bin/apache-tomcat-10.1.18.tar.gz"
+    tomcat_version: "10.1.18" # Ensure this matches the desired Tomcat version
+    tomcat_download_url: "https://dlcdn.apache.org/tomcat/tomcat-10/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
     tomcat_install_directory: "/opt/tomcat10"
 
   tasks:
-    - name: Update the System Packages
+    - name: Update necessary system packages
       yum:
-        name: "*"
+        name:
+          - httpd # Example dependency, adjust as needed
         state: latest
         update_cache: yes
 
@@ -31,7 +32,7 @@
         name: java-11-openjdk
         state: present
 
-    - name: Create a Tomcat Directory
+    - name: Create Tomcat Installation Directory
       file:
         path: "{{ tomcat_install_directory }}"
         owner: tomcat
@@ -48,63 +49,63 @@
         owner: tomcat
         group: tomcat
 
-    - name: Set Correct Permissions for Tomcat Directory
+    - name: Set Correct Permissions for Tomcat Directory and Subdirectories
       file:
-        path: "{{ item }}"
+        path: "{{ item.path }}"
         owner: tomcat
         group: tomcat
-        mode: u+rwx,g+rx,o=rx
-        recurse: yes
-      with_items:
-        - "{{ tomcat_install_directory }}"
-        - "{{ tomcat_install_directory }}/conf"
-        - "{{ tomcat_install_directory }}/webapps"
-        - "{{ tomcat_install_directory }}/logs"
-        - "{{ tomcat_install_directory }}/temp"
-        - "{{ tomcat_install_directory }}/bin"
+        mode: "{{ item.mode }}"
+        recurse: "{{ item.recurse | default('no') }}"
+      loop:
+        - { path: "{{ tomcat_install_directory }}", mode: "u+rwx,g+rx,o=rx" }
+        - { path: "{{ tomcat_install_directory }}/conf", mode: "u+rwx,g+r,o-rwx", recurse: yes }
+        - { path: "{{ tomcat_install_directory }}/webapps", mode: "u+rwx,g+rx,o=rx" }
+        - { path: "{{ tomcat_install_directory }}/logs", mode: "u+rwx,g+rx,o=rx" }
+        - { path: "{{ tomcat_install_directory }}/temp", mode: "u+rwx,g+rx,o=rx" }
+        - { path: "{{ tomcat_install_directory }}/bin", mode: "u+rwx,g+rx,o=rx" }
 
-    - name: Creating a service file 
+    - name: Creating a Tomcat Service File
       become: yes
       copy:
-        content: |-
+        content: |
           [Unit]
-          Description=Tomcat Service 
+          Description=Tomcat 10 Service
           Requires=network.target
           After=network.target
 
           [Service]
-          Type=forking 
+          Type=forking
           User=tomcat
-          Environment="CATALINA_PID=/opt/tomcat10/logs/tomcat.pid"
-          Environment="CATALINA_BASE=/opt/tomcat10" 
-          Environment="CATALINA_HOME=/opt/tomcat10"
-          Environment="CATALINA_OPTS=-Xms512M -Xmxl024M -server -XX:+UseParallelGC"
-          
-          ExecStart=/opt/tomcat10/bin/startup.sh 
-          ExecStop=/opt/tomcat10/bin/shutdown.sh 
+          Environment="CATALINA_PID={{ tomcat_install_directory }}/logs/tomcat.pid"
+          Environment="CATALINA_BASE={{ tomcat_install_directory }}"
+          Environment="CATALINA_HOME={{ tomcat_install_directory }}"
+          Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+          ExecStart={{ tomcat_install_directory }}/bin/startup.sh
+          ExecStop={{ tomcat_install_directory }}/bin/shutdown.sh
           Restart=on-abnormal
+          RemainAfterExit=no
 
           [Install]
           WantedBy=multi-user.target
         dest: /etc/systemd/system/tomcat.service
 
-    - name: Reload the SystemD to re-read configurations
-      become: yes
+    - name: Reload systemd to re-read Tomcat service configuration
       systemd:
         daemon_reload: yes
-    
-    - name: Enable Tomcat 10 on server
-      become: yes
+
+    - name: Enable and Start Tomcat Service
       systemd:
         name: tomcat
         enabled: yes
         state: started
 
-    - name: Connect to Tomcat server on port 8080 and check status 200 - Try 5 times
-      tags: test
+    - name: Verify Tomcat Service is Running
       uri:
         url: http://localhost:8080
+        method: GET
       register: result
-      until: "result.status == 200"
+      until: result.status == 200
       retries: 5
       delay: 10
+      changed_when: false
+      tags: test
