@@ -1,0 +1,52 @@
+---
+- name: Remove Nexus Repository Manager
+  hosts: your_target_hosts
+  become: true
+  vars:
+    nexus_install_directory: "/opt/nexus"
+    nexus_data_directory: "/opt/nexus-data"
+    nexus_user: "nexus"
+    nexus_group: "nexus"
+
+  tasks:
+    - name: Stop Nexus Service
+      systemd:
+        name: nexus
+        state: stopped
+      ignore_errors: yes
+
+    - name: Disable Nexus Service
+      systemd:
+        name: nexus
+        enabled: no
+      ignore_errors: yes
+
+    - name: Remove Nexus Service File
+      file:
+        path: /etc/systemd/system/nexus.service
+        state: absent
+
+    - name: Remove Nexus Installation and Data Directories
+      file:
+        path: "{{ item }}"
+        state: absent
+        recurse: yes
+      loop:
+        - "{{ nexus_install_directory }}"
+        - "{{ nexus_data_directory }}"
+
+    - name: Remove Nexus User
+      user:
+        name: "{{ nexus_user }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Remove Nexus Group
+      group:
+        name: "{{ nexus_group }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Reload Systemd
+      systemd:
+        daemon_reload: yes
