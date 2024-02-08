@@ -1,3 +1,3 @@
 [webservers]
-172.31.94.9 ansible_ssh_user='ec2-user' ansible_private_key_file=~/demoKey
+172.31.92.177 ansible_ssh_user='ec2-user' ansible_private_key_file=~/demoKey
 
