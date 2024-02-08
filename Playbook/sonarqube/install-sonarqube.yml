@@ -1,97 +1,88 @@
 ---
 - name: Install SonarQube
-  hosts: sonar
+  hosts: your_target_hosts
   become: true
   vars:
-    sonarqube_version: "8.9.1.44547"
-    sonarqube_home: "/opt/sonarqube"
+    sonarqube_version: "8.9.0.43852"
     sonarqube_download_url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonarqube_version }}.zip"
-    postgresql_jdbc_driver_url: "https://jdbc.postgresql.org/download/postgresql-42.2.5.jar"
+    sonarqube_install_directory: "/opt/sonarqube"
+    sonarqube_user: "sonarqube"
+    sonarqube_group: "sonarqube"
 
   tasks:
-    - name: Install necessary packages
-      yum:
-        name:
-          - java-11-openjdk
-          - unzip
-          - wget
-          - git
-        state: present
-
-    - name: Create SonarQube group
-      group:
-        name: sonarqube
-        state: present
-
-    - name: Create SonarQube user
+    - name: Create SonarQube User
       user:
-        name: sonarqube
-        group: sonarqube
+        name: "{{ sonarqube_user }}"
         system: true
-        home: "{{ sonarqube_home }}"
-        createhome: false
+        shell: /bin/false
+
+    - name: Create SonarQube Group
+      group:
+        name: "{{ sonarqube_group }}"
+        system: true
+
+    - name: Install Unzip (if not present)
+      yum:
+        name: unzip
+        state: present
 
     - name: Download SonarQube
       get_url:
         url: "{{ sonarqube_download_url }}"
         dest: "/tmp/sonarqube.zip"
+        mode: '0440'
 
-    - name: Ensure SonarQube home directory exists
+    - name: Create SonarQube Installation Directory
       file:
-        path: "{{ sonarqube_home }}"
+        path: "{{ sonarqube_install_directory }}"
         state: directory
-        owner: sonarqube
-        group: sonarqube
+        owner: "{{ sonarqube_user }}"
+        group: "{{ sonarqube_group }}"
+        mode: '0755'
 
-    - name: Unzip SonarQube with strip components
-      command: unzip -o /tmp/sonarqube.zip -d /opt/sonarqube_temp
-      become: true
-      become_user: sonarqube
+    - name: Unzip SonarQube to Installation Directory
+      unarchive:
+        src: "/tmp/sonarqube.zip"
+        dest: "{{ sonarqube_install_directory }}"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+        owner: "{{ sonarqube_user }}"
+        group: "{{ sonarqube_group }}"
 
-    - name: Move SonarQube files to correct directory
-      command: mv /opt/sonarqube_temp/* /opt/sonarqube/
-      become: true
-      become_user: sonarqube
-      # Assuming sonarqube_install_needs_strip is defined elsewhere in your playbook or vars
-      when: sonarqube_install_needs_strip | default(true)
-
-    - name: Remove temporary directory
+    - name: Set Permission for SonarQube Installation
       file:
-        path: /opt/sonarqube_temp
-        state: absent
-      become: true
-
-    - name: Download PostgreSQL JDBC driver
-      get_url:
-        url: "{{ postgresql_jdbc_driver_url }}"
-        dest: "{{ sonarqube_home }}/extensions/jdbc-driver/postgresql/"
-        owner: sonarqube
-        group: sonarqube
-
-    - name: Set proper permissions on SonarQube directories
-      file:
-        path: "{{ item }}"
-        owner: sonarqube
-        group: sonarqube
+        path: "{{ sonarqube_install_directory }}"
+        owner: "{{ sonarqube_user }}"
+        group: "{{ sonarqube_group }}"
         recurse: yes
-      with_items:
-        - "{{ sonarqube_home }}/temp"
-        - "{{ sonarqube_home }}/logs"
-        - "{{ sonarqube_home }}/data"
+        mode: '0755'
 
-    - name: Configure SonarQube to run as a service (Example systemd unit file)
-      template:
-        src: sonarqube.service.j2
+    - name: Create SonarQube Service File
+      copy:
+        content: |
+          [Unit]
+          Description=SonarQube service
+          After=syslog.target network.target
+
+          [Service]
+          Type=simple
+          User={{ sonarqube_user }}
+          Group={{ sonarqube_group }}
+          PermissionsStartOnly=true
+          ExecStart={{ sonarqube_install_directory }}/bin/linux-x86-64/sonar.sh start
+          ExecStop={{ sonarqube_install_directory }}/bin/linux-x86-64/sonar.sh stop
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
         dest: /etc/systemd/system/sonarqube.service
-      notify: Reload systemd
 
-    - name: Start and enable SonarQube service
+    - name: Reload Systemd Daemon
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable and Start SonarQube Service
       systemd:
         name: sonarqube
         enabled: yes
         state: started
-
-  handlers:
-    - name: Reload systemd
-      systemd:
-        daemon_reload: yes

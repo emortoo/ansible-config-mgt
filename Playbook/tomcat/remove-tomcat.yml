@@ -1,8 +1,10 @@
 ---
-- name: Remove Apache Tomcat 10
+- name: Uninstall Apache Tomcat 10 using Ansible
   hosts: webservers
   remote_user: ec2-user
   become: true
+  vars:
+    tomcat_install_directory: "/opt/tomcat10"
 
   tasks:
     - name: Stop Tomcat Service
@@ -15,10 +17,9 @@
       systemd:
         name: tomcat
         enabled: no
-        state: stopped
       ignore_errors: yes
 
-    - name: Remove Tomcat Service file
+    - name: Remove Tomcat Service File
       file:
         path: /etc/systemd/system/tomcat.service
         state: absent
@@ -26,9 +27,9 @@
 
     - name: Remove Tomcat Installation Directory
       file:
-        path: /opt/tomcat10
+        path: "{{ tomcat_install_directory }}"
         state: absent
-      ignore_errors: yes
+        recurse: yes
 
     - name: Remove Tomcat User
       user:
