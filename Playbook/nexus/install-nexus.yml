@@ -1,6 +1,6 @@
 ---
 - name: Install Nexus Repository Manager
-  hosts: your_target_hosts
+  hosts: webservers
   become: true
   vars:
     nexus_version: "3.30.0-01"
