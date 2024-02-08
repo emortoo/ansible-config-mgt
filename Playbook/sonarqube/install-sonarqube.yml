@@ -1,6 +1,6 @@
 ---
 - name: Install SonarQube
-  hosts: your_target_hosts
+  hosts: webservers
   become: true
   vars:
     sonarqube_version: "8.9.0.43852"
@@ -43,11 +43,12 @@
     - name: Unzip SonarQube to Installation Directory
       unarchive:
         src: "/tmp/sonarqube.zip"
-        dest: "{{ sonarqube_install_directory }}"
+        dest: "/opt/sonarqube_temp"
         remote_src: yes
         extra_opts: [--strip-components=1]
         owner: "{{ sonarqube_user }}"
         group: "{{ sonarqube_group }}"
+      become: yes
 
     - name: Set Permission for SonarQube Installation
       file:
