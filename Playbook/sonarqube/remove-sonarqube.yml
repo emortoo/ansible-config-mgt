@@ -34,13 +34,11 @@
       file:
         path: "{{ sonarqube_install_directory }}"
         state: absent
-        recurse: yes
 
     - name: Remove SonarQube Temporary Extraction Directory
       file:
         path: "{{ sonarqube_temp_directory }}"
         state: absent
-        recurse: yes
 
     - name: Remove SonarQube User
       user:
@@ -53,12 +51,6 @@
         name: "{{ sonarqube_group }}"
         state: absent
       ignore_errors: yes
-
-    # Uncomment the following task if you want to remove Java 11 OpenJDK Development Kit as well
-    # - name: Uninstall Java 11 OpenJDK Development Kit
-    #   yum:
-    #     name: java-11-openjdk-devel
-    #     state: absent
 
 
    
