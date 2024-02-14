@@ -29,7 +29,6 @@
       file:
         path: "{{ tomcat_install_directory }}"
         state: absent
-        recurse: yes
 
     - name: Remove Tomcat User
       user:
