@@ -1,6 +1,6 @@
 ---
 - name: Install SonarQube
-  hosts: webservers
+  hosts: sonarqube
   become: true
   vars:
     sonarqube_version: "8.9.0.43852"

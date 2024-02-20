@@ -1,6 +1,6 @@
 ---
 - name: Remove Nexus Repository Manager
-  hosts: webservers
+  hosts: nexus
   become: true
   vars:
     nexus_install_directory: "/opt/nexus"

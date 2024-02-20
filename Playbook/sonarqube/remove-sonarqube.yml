@@ -1,6 +1,6 @@
 ---
 - name: Uninstall SonarQube
-  hosts: webservers
+  hosts: sonarqube
   become: true
   vars:
     sonarqube_install_directory: "/opt/sonarqube"
