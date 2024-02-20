@@ -15,7 +15,7 @@
         dest: "{{ tomcat_install_directory }}/conf/tomcat-users.xml"
         owner: tomcat
         group: tomcat
-        mode: '0644'
+        mode: '0777'
 
     - name: Adjust Manager's context.xml to modify access restrictions
       lineinfile:
